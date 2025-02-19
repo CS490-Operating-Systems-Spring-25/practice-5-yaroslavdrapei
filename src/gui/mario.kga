@@ -32,86 +32,116 @@ write "cccccccccccccccccccccccccccc" to 218
 write "cccccccccccccccccccccccccccc" to 219
 write "cccccccccccccccccccccccccccc" to 220
 
-label start
-    var counter
+var counter
+write 200 to var:counter
 
-    // Let's move up
-    write 195 to var:counter
-    label loop_move_up
-        copy var:counter to REG_A
-        write OP_INCR to REG_OP
-        cpu_exec
-        copy REG_RES to var:counter
+label shift_left
+    copy *var:counter to REG_A
+    write "1" to REG_B
+    write "" to REG_C
+    write "" to REG_D
+    write OP_REPLACE_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to *var:counter
 
-        copy var:counter to REG_A
-        write 21 to REG_B
-        write OP_ADD to REG_OP
-        cpu_exec
+    copy var:counter to REG_A
+    write OP_INCR to REG_OP
+    cpu_exec
+    copy REG_RES to var:counter
 
-        copy var:counter to REG_A
-        copy REG_RES to REG_B
-        write OP_RENDER_BITMAP to REG_OP
-        cpu_exec
+    copy var:counter to REG_A
+    write 217 to REG_B
+    write OP_CMP_LT to REG_OP
+    cpu_exec
+    jump_if label:shift_left
+    jump label:draw
 
-        write "0.1" to REG_A
-        write OP_NOP to REG_OP
-        cpu_exec
+label copy_mario
+    copy *var:counter to REG_A
+    write "0" to REG_B
+    write "" to REG_C
+    write "" to REG_D
+    write OP_REPLACE_COLUMN to REG_OP
+    cpu_exec
+    copy REG_RES to *var:counter
 
-        copy var:counter to REG_A
-        write 200 to REG_B
-        write OP_CMP_NEQ to REG_OP
-        cpu_exec
-        jump_if label:loop_move_up
+    copy var:counter to REG_A
+    write OP_INCR to REG_OP
+    cpu_exec
+    copy REG_RES to var:counter
 
-    // let's move down
-    label loop_move_down
-        copy var:counter to REG_A
-        write OP_DECR to REG_OP
-        cpu_exec
-        copy REG_RES to var:counter
+    copy var:counter to REG_A
+    write 217 to REG_B
+    write OP_CMP_LT to REG_OP
+    cpu_exec
+    jump_if label:copy_mario
+    jump label:draw
 
-        copy var:counter to REG_A
-        write 21 to REG_B
-        write OP_ADD to REG_OP
-        cpu_exec
+label shift_right
+    write "c" to REG_A
+    copy *var:counter to REG_B
+    write "" to REG_C
+    write OP_CONCAT_WITH to REG_OP
+    cpu_exec
+    copy REG_RES to *var:counter
 
-        copy var:counter to REG_A
-        copy REG_RES to REG_B
-        write OP_RENDER_BITMAP to REG_OP
-        cpu_exec
+    copy var:counter to REG_A
+    write OP_INCR to REG_OP
+    cpu_exec
+    copy REG_RES to var:counter
 
-        write "0.1" to REG_A
-        write OP_NOP to REG_OP
-        cpu_exec
+    copy var:counter to REG_A
+    write 217 to REG_B
+    write OP_CMP_LT to REG_OP
+    cpu_exec
+    jump_if label:shift_right
+    jump label:draw
 
-        write 196 to REG_A
-        copy var:counter to REG_B
-        write OP_CMP_LT to REG_OP
-        cpu_exec
-        jump_if label:loop_move_down
+label draw
+    write 200 to REG_A
+    write 217 to REG_B
+    write OP_RENDER_BITMAP to REG_OP
+    cpu_exec
+    write 200 to var:counter
+    jump label:read_key
 
-    // let's shift bitmap to the right
-        write 200 to var:counter
-    label shift_right
-        write "c" to REG_A
-        copy *var:counter to REG_B
-        write "" to REG_C
-        write OP_CONCAT_WITH to REG_OP
-        cpu_exec
-        copy REG_RES to *var:counter
+label read_key
+    write KEYBOARD_READ_CHAR to REG_A
+    write OP_READ_INPUT to REG_OP
+    cpu_exec
 
-        copy var:counter to REG_A
-        write OP_INCR to REG_OP
-        cpu_exec
-        copy REG_RES to var:counter
+    copy KEYBOARD_BUFFER to REG_A
+    write "s" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:copy_mario
 
-        copy var:counter to REG_A
-        write 217 to REG_B
-        write OP_CMP_LT to REG_OP
-        cpu_exec
-        jump_if label:shift_right
+    copy KEYBOARD_BUFFER to REG_A
+    write "a" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:shift_left
 
-jump label:start
+    copy KEYBOARD_BUFFER to REG_A
+    write "d" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:shift_right
+
+    copy KEYBOARD_BUFFER to REG_A
+    write "q" to REG_B
+    write OP_CMP_EQ to REG_OP
+    cpu_exec
+    jump_if label:exit
+    jump label:read_key
+
+label exit
+  write OP_HALT to REG_OP
+  cpu_exec
+
+jump label:read_key
 
 write OP_HALT to REG_OP
 cpu_exec
+
+// i saved the clone mario command on "s" key
